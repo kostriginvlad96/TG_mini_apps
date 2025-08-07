@@ -1,219 +1,252 @@
-import { TelegramWebApp, TelegramUser } from '@/types';
-
-// Глобальная переменная для Telegram Web App
+// Telegram Web App utilities
 declare global {
   interface Window {
     Telegram: {
-      WebApp: TelegramWebApp;
+      WebApp: {
+        initData: string;
+        initDataUnsafe: {
+          query_id: string;
+          user: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            language_code?: string;
+            is_premium?: boolean;
+          };
+          receiver: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+          };
+          chat: {
+            id: number;
+            type: string;
+            title?: string;
+            username?: string;
+          };
+          chat_type: string;
+          chat_instance: string;
+          start_param?: string;
+          can_send_after: number;
+          auth_date: number;
+          hash: string;
+        };
+        colorScheme: 'light' | 'dark';
+        themeParams: {
+          bg_color: string;
+          text_color: string;
+          hint_color: string;
+          link_color: string;
+          button_color: string;
+          button_text_color: string;
+        };
+        isExpanded: boolean;
+        viewportHeight: number;
+        viewportStableHeight: number;
+        headerColor: string;
+        backgroundColor: string;
+        isClosingConfirmationEnabled: boolean;
+        BackButton: {
+          isVisible: boolean;
+          onClick: (callback: () => void) => void;
+          offClick: (callback: () => void) => void;
+          show: () => void;
+          hide: () => void;
+        };
+        MainButton: {
+          text: string;
+          color: string;
+          textColor: string;
+          isVisible: boolean;
+          isProgressVisible: boolean;
+          isActive: boolean;
+          setText: (text: string) => void;
+          onClick: (callback: () => void) => void;
+          offClick: (callback: () => void) => void;
+          show: () => void;
+          hide: () => void;
+          enable: () => void;
+          disable: () => void;
+          showProgress: (leaveActive?: boolean) => void;
+          hideProgress: () => void;
+          setParams: (params: {
+            text?: string;
+            color?: string;
+            text_color?: string;
+            is_visible?: boolean;
+            is_progress_visible?: boolean;
+            is_active?: boolean;
+          }) => void;
+        };
+        HapticFeedback: {
+          impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+          notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+          selectionChanged: () => void;
+        };
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        isVersionAtLeast: (version: string) => boolean;
+        platform: string;
+        version: string;
+        sendData: (data: string) => void;
+        switchInlineQuery: (query: string, choose_chat_types?: string[]) => void;
+        openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
+        openTelegramLink: (url: string) => void;
+        openInvoice: (url: string, callback?: (status: string) => void) => void;
+        showPopup: (params: {
+          title?: string;
+          message: string;
+          buttons?: Array<{
+            id?: string;
+            type?: 'default' | 'ok' | 'close' | 'cancel' | 'destructive';
+            text: string;
+          }>;
+        }, callback?: (buttonId: string) => void) => void;
+        showAlert: (message: string, callback?: () => void) => void;
+        showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
+        showScanQrPopup: (params: {
+          text?: string;
+        }, callback?: (data: string) => void) => void;
+        closeScanQrPopup: () => void;
+        readTextFromClipboard: (callback?: (data: string | null) => void) => void;
+        requestWriteAccess: (callback?: (access: boolean) => void) => void;
+        requestContact: (callback?: (contact: {
+          phone_number: string;
+          first_name: string;
+          last_name?: string;
+          user_id?: number;
+          vcard?: string;
+        }) => void) => void;
+        invokeCustomMethod: (method: string, params?: any) => void;
+        onEvent: (eventType: string, eventHandler: (event: any) => void) => void;
+        offEvent: (eventType: string, eventHandler: (event: any) => void) => void;
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        enableClosingConfirmation: () => void;
+        disableClosingConfirmation: () => void;
+        setClosingConfirmation: (enabled: boolean) => void;
+      };
     };
   }
 }
 
-// Получение экземпляра Telegram Web App
-export const getTelegramWebApp = (): TelegramWebApp | null => {
-  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-    return window.Telegram.WebApp;
-  }
-  return null;
-};
-
 // Инициализация Telegram Web App
-export const initTelegramWebApp = (): TelegramWebApp | null => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
+export const initTelegramWebApp = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    const webApp = window.Telegram.WebApp;
+    
+    // Инициализация
     webApp.ready();
-    webApp.expand();
     
     // Настройка темы
     if (webApp.colorScheme === 'dark') {
       document.documentElement.classList.add('dark');
     }
     
+    // Настройка высоты viewport
+    const setViewportHeight = () => {
+      document.documentElement.style.setProperty(
+        '--vh',
+        `${webApp.viewportHeight * 0.01}px`
+      );
+    };
+    
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    
     return webApp;
+  }
+  
+  return null;
+};
+
+// Получение данных пользователя из Telegram
+export const getTelegramUser = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    return window.Telegram.WebApp.initDataUnsafe?.user || null;
   }
   return null;
 };
 
-// Получение данных пользователя
-export const getTelegramUser = (): TelegramUser | null => {
-  const webApp = getTelegramWebApp();
-  return webApp?.initDataUnsafe?.user || null;
+// Haptic Feedback
+export const hapticFeedback = {
+  light: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
+  },
+  medium: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+  },
+  heavy: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+    }
+  },
+  success: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+  },
+  error: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    }
+  },
+  warning: () => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+    }
+  }
 };
 
-// Проверка авторизации
-export const isTelegramAuthorized = (): boolean => {
-  const webApp = getTelegramWebApp();
-  return !!(webApp?.initDataUnsafe?.user);
-};
-
-// Показ главной кнопки
-export const showMainButton = (text: string, callback?: () => void): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
+// Показ Main Button
+export const showMainButton = (text: string, callback?: () => void) => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    const webApp = window.Telegram.WebApp;
     webApp.MainButton.setText(text);
+    webApp.MainButton.show();
+    
     if (callback) {
       webApp.MainButton.onClick(callback);
     }
-    webApp.MainButton.show();
-    webApp.MainButton.enable();
   }
 };
 
-// Скрытие главной кнопки
-export const hideMainButton = (): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.MainButton.hide();
+// Скрытие Main Button
+export const hideMainButton = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    window.Telegram.WebApp.MainButton.hide();
   }
 };
 
-// Показ кнопки "Назад"
-export const showBackButton = (callback?: () => void): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
+// Показ Back Button
+export const showBackButton = (callback?: () => void) => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    const webApp = window.Telegram.WebApp;
+    webApp.BackButton.show();
+    
     if (callback) {
       webApp.BackButton.onClick(callback);
     }
-    webApp.BackButton.show();
   }
 };
 
-// Скрытие кнопки "Назад"
-export const hideBackButton = (): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.BackButton.hide();
+// Скрытие Back Button
+export const hideBackButton = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    window.Telegram.WebApp.BackButton.hide();
   }
 };
 
-// Тактильная обратная связь
-export const hapticFeedback = {
-  light: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.impactOccurred('light');
-  },
-  medium: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.impactOccurred('medium');
-  },
-  heavy: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.impactOccurred('heavy');
-  },
-  success: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.notificationOccurred('success');
-  },
-  error: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.notificationOccurred('error');
-  },
-  warning: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.notificationOccurred('warning');
-  },
-  selection: () => {
-    const webApp = getTelegramWebApp();
-    webApp?.HapticFeedback.selectionChanged();
-  },
-};
-
-// Показ алерта
-export const showAlert = (message: string, callback?: () => void): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.showAlert(message, callback);
+// Закрытие Mini App
+export const closeMiniApp = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    window.Telegram.WebApp.close();
   }
-};
-
-// Показ подтверждения
-export const showConfirm = (message: string, callback?: (confirmed: boolean) => void): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.showConfirm(message, callback);
-  }
-};
-
-// Показ попапа
-export const showPopup = (
-  params: { title?: string; message: string; buttons?: Array<{ id?: string; type?: 'default' | 'ok' | 'close' | 'cancel' | 'destructive'; text: string }> },
-  callback?: (buttonId: string) => void
-): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.showPopup(params, callback);
-  }
-};
-
-// Открытие ссылки
-export const openLink = (url: string, options?: { try_instant_view?: boolean }): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.openLink(url, options);
-  }
-};
-
-// Открытие счета
-export const openInvoice = (url: string, callback?: (status: string) => void): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.openInvoice(url, callback);
-  }
-};
-
-// Закрытие приложения
-export const closeApp = (): void => {
-  const webApp = getTelegramWebApp();
-  if (webApp) {
-    webApp.close();
-  }
-};
-
-// Получение данных из облачного хранилища
-export const getCloudStorageItem = async (key: string): Promise<string | null> => {
-  const webApp = getTelegramWebApp();
-  if (webApp?.CloudStorage) {
-    return await webApp.CloudStorage.getItem(key);
-  }
-  return null;
-};
-
-// Сохранение данных в облачное хранилище
-export const setCloudStorageItem = async (key: string, value: string): Promise<void> => {
-  const webApp = getTelegramWebApp();
-  if (webApp?.CloudStorage) {
-    await webApp.CloudStorage.setItem(key, value);
-  }
-};
-
-// Удаление данных из облачного хранилища
-export const removeCloudStorageItem = async (key: string): Promise<void> => {
-  const webApp = getTelegramWebApp();
-  if (webApp?.CloudStorage) {
-    await webApp.CloudStorage.removeItem(key);
-  }
-};
-
-// Проверка версии Telegram Web App
-export const isVersionAtLeast = (version: string): boolean => {
-  const webApp = getTelegramWebApp();
-  return webApp?.isVersionAtLeast(version) || false;
-};
-
-// Получение параметров темы
-export const getThemeParams = () => {
-  const webApp = getTelegramWebApp();
-  return webApp?.themeParams || {};
-};
-
-// Получение высоты viewport
-export const getViewportHeight = (): number => {
-  const webApp = getTelegramWebApp();
-  return webApp?.viewportHeight || window.innerHeight;
-};
-
-// Получение стабильной высоты viewport
-export const getViewportStableHeight = (): number => {
-  const webApp = getTelegramWebApp();
-  return webApp?.viewportStableHeight || window.innerHeight;
 };

@@ -304,3 +304,6 @@ export const useApp = (): AppContextType => {
   }
   return context;
 };
+
+// Алиас для обратной совместимости
+export const useAppContext = useApp;

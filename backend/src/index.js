@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const productsRoutes = require('./routes/products');
+const categoriesRoutes = require('./routes/categories');
 const ordersRoutes = require('./routes/orders');
 const paymentsRoutes = require('./routes/payments');
 const telegramRoutes = require('./routes/telegram');
@@ -42,8 +43,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'БАБКИН ВНУК API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      orders: '/api/orders',
+      payments: '/api/payments',
+      telegram: '/api/telegram'
+    },
+    documentation: 'См. README.md для подробной информации'
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/payments', paymentsRoutes);

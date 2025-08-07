@@ -1,79 +1,58 @@
-const { Pool } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-let db;
+const dbPath = path.join(__dirname, '../../database.sqlite');
 
-if (process.env.NODE_ENV === 'production') {
-  // PostgreSQL для production
-  db = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  });
-} else {
-  // SQLite для разработки
-  const dbPath = path.join(__dirname, '../../database.sqlite');
-  db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error('Ошибка подключения к SQLite:', err.message);
-    } else {
-      console.log('✅ Подключение к SQLite установлено');
-    }
-  });
-}
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('❌ Ошибка подключения к SQLite:', err.message);
+  } else {
+    console.log('✅ Подключение к SQLite установлено');
+  }
+});
 
 // Функция для выполнения запросов
-const query = (text, params) => {
+const query = (sql, params = []) => {
   return new Promise((resolve, reject) => {
-    if (process.env.NODE_ENV === 'production') {
-      // PostgreSQL
-      db.query(text, params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    } else {
-      // SQLite
-      db.all(text, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ rows });
-        }
-      });
-    }
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
   });
 };
 
-// Функция для выполнения одной строки
-const queryOne = (text, params) => {
+// Функция для выполнения запросов с одной записью
+const queryOne = (sql, params = []) => {
   return new Promise((resolve, reject) => {
-    if (process.env.NODE_ENV === 'production') {
-      // PostgreSQL
-      db.query(text, params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result.rows[0]);
-        }
-      });
-    } else {
-      // SQLite
-      db.get(text, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    }
+    db.get(sql, params, (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row);
+      }
+    });
+  });
+};
+
+// Функция для выполнения запросов без возврата данных
+const run = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ id: this.lastID, changes: this.changes });
+      }
+    });
   });
 };
 
 module.exports = {
   db,
   query,
-  queryOne
+  queryOne,
+  run
 };
